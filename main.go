@@ -1,12 +1,15 @@
 package main
 
 import (
+	"bufio"
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"math/big"
+	"os"
 )
 
 func gcd(a, b, x, y *big.Int) *big.Int {
@@ -125,10 +128,67 @@ func decryptingRSA(d, n *big.Int, en string) string {
 	return string(de)
 }
 
+func readInput() (string, error) {
+	scanner := bufio.NewScanner(os.Stdin)
+	var input string
+	for scanner.Scan() {
+		input += scanner.Text()
+	}
+	if err := scanner.Err(); err != nil {
+		return "", err
+	}
+	return input, nil
+}
+
+func readFile(filename string) (string, error) {
+	var table string
+	file, err := os.Open(filename)
+	if err != nil {
+		return table, err
+	}
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			return
+		}
+	}(file)
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		table += scanner.Text()
+	}
+	if err := scanner.Err(); err != nil {
+		return table, err
+	}
+	return table, nil
+}
+
 func main() {
-	text := "Yes? Its fantastic"
-	d, n, e := genKeys(1024)
-	fmt.Printf("decrypt key: %d\n encrypt key: %d\n modulo: %d", d, e, n)
+	bitLenPtr := flag.Int("len", 256, "Length of prime number used to generate keys")
+	fromPtr := flag.Int("input", 0, "Input declaration {0,1,2}")
+	messagePtr := flag.String("m", "Hello word", "Message input (if input = 0)")
+	filePtr := flag.String("file", "text.txt", "File path when input = 2")
+	flag.Parse()
+	var text string
+	var err error
+	switch *fromPtr {
+	case 0:
+		text = *messagePtr
+	case 1:
+		text, err = readInput()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	case 2:
+		text, err = readFile(*filePtr)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	default:
+		log.Fatal("invalid flag value")
+	}
+	d, n, e := genKeys(*bitLenPtr)
+	fmt.Printf("decrypt key: %d\nencrypt key: %d\nmodulo: %d\n", d, e, n)
 	en := encryptingRSA(e, n, text)
 	fmt.Printf("Encrypted message %s\n", en)
 	fmt.Println("Decrypted message:", decryptingRSA(d, n, en))
