@@ -60,7 +60,7 @@ Reads input from a specified file.
 
 1. Clone the repository:
 ```sh
-git clone <repository_url>
+git clone https://github.com/s26435/RSA
 ```
 
 2. Build the program:
