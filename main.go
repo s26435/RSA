@@ -12,6 +12,15 @@ import (
 	"os"
 )
 
+var (
+	cryptPtr   = flag.Bool("dec", false, "if you want to decrypt message")
+	bitLenPtr  = flag.Int("len", 256, "Length of prime number used to generate keys")
+	fromPtr    = flag.Int("input", 0, "Input declaration {0,1,2}")
+	messagePtr = flag.String("m", "Hello word", "Message input (if input = 0)")
+	filePtr    = flag.String("file", "text.txt", "File path when input = 2")
+	outputPtr  = flag.String("out", "", "Output file path")
+)
+
 func gcd(a, b, x, y *big.Int) *big.Int {
 	if a.Cmp(big.NewInt(0)) == 0 {
 		x.SetInt64(0)
@@ -94,7 +103,6 @@ func decryptFromBase64(base64Str string) ([]*big.Int, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	var en []*big.Int
 	for i := 0; i < len(decodedBytes); {
 		length := int(decodedBytes[i])<<24 | int(decodedBytes[i+1])<<16 | int(decodedBytes[i+2])<<8 | int(decodedBytes[i+3])
@@ -102,7 +110,6 @@ func decryptFromBase64(base64Str string) ([]*big.Int, error) {
 		en = append(en, new(big.Int).SetBytes(decodedBytes[i:i+length]))
 		i += length
 	}
-
 	return en, nil
 }
 
@@ -163,12 +170,35 @@ func readFile(filename string) (string, error) {
 	return table, nil
 }
 
-func main() {
-	bitLenPtr := flag.Int("len", 256, "Length of prime number used to generate keys")
-	fromPtr := flag.Int("input", 0, "Input declaration {0,1,2}")
-	messagePtr := flag.String("m", "Hello word", "Message input (if input = 0)")
-	filePtr := flag.String("file", "text.txt", "File path when input = 2")
-	flag.Parse()
+func writeToFile(path, text string) {
+	t := []byte(text)
+	if _, err := os.Stat("path"); err == nil {
+		f, err := os.Open(path)
+		if err != nil {
+			log.Fatal(err)
+		}
+		_, err = f.Write(t)
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else if errors.Is(err, os.ErrNotExist) {
+		f, err := os.Create(path)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer func(f *os.File) {
+			err := f.Close()
+			if err != nil {
+				log.Fatal(err)
+			}
+		}(f)
+		_, err = f.Write(t)
+	} else {
+		panic("Unexpected error during file opening." + err.Error())
+	}
+}
+
+func encrypt() {
 	var text string
 	var err error
 	switch *fromPtr {
@@ -188,8 +218,71 @@ func main() {
 		log.Fatal("invalid flag value")
 	}
 	d, n, e := genKeys(*bitLenPtr)
-	fmt.Printf("decrypt key: %d\nencrypt key: %d\nmodulo: %d\n", d, e, n)
 	en := encryptingRSA(e, n, text)
-	fmt.Printf("Encrypted message %s\n", en)
-	fmt.Println("Decrypted message:", decryptingRSA(d, n, en))
+	//decrypted := decryptingRSA(d, n, en)
+	if *outputPtr == "" {
+		fmt.Printf("decrypt key: %d\nencrypt key: %d\nmodulo: %d\n", d, e, n)
+		fmt.Printf("Encrypted message %s\n", en)
+	} else {
+		writeToFile(*outputPtr, fmt.Sprintf("%d\n%d\n%d\n%s", d, e, n, en))
+	}
+}
+
+func decrypt() {
+	var text string
+	var err error
+	var table []string
+	d, n := new(big.Int), new(big.Int)
+	switch *fromPtr {
+	case 0:
+		log.Fatal("can not parse from text in decryption mode")
+	case 1:
+		text, err = readInput()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	case 2:
+		file, err := os.Open(*filePtr)
+		if err != nil {
+			log.Fatal("error during opening file")
+		}
+		defer func(file *os.File) {
+			err := file.Close()
+			if err != nil {
+				return
+			}
+		}(file)
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			table = append(table, scanner.Text())
+		}
+		if err := scanner.Err(); err != nil {
+			log.Fatal(err.Error())
+		}
+	default:
+		log.Fatal("invalid flag value")
+	}
+	if len(table) != 0 {
+		fmt.Printf("%s, %s\n", table[0], table[2])
+		d.SetString(table[0], 10)
+		n.SetString(table[2], 10)
+		for i := 3; i < len(table); i++ {
+			text += table[i]
+		}
+	}
+	decrypted := decryptingRSA(d, n, text)
+	if *outputPtr == "" {
+		fmt.Printf("Decrypted message %s\n", decrypted)
+	} else {
+		writeToFile(*outputPtr, fmt.Sprintf("%d\n%s\n%d\n%s", d, table[1], n, decrypted))
+	}
+}
+
+func main() {
+	flag.Parse()
+	if *cryptPtr {
+		decrypt()
+	} else {
+		encrypt()
+	}
 }

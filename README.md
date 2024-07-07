@@ -1,108 +1,91 @@
-# RSA Encryption/Decryption in Go
+# RSA Encryption/Decryption Program
 
-This repository contains a Go program that demonstrates RSA encryption and decryption. The program generates RSA keys, encrypts a given text message using the public key, and decrypts it back to the original message using the private key. The encrypted message is also encoded in Base64 format for safe transmission.
+This program provides functionality for RSA encryption and decryption. It can generate RSA keys, encrypt messages, and decrypt encrypted messages. The program supports reading input from the command line, standard input, or a file, and it can output the results to the console or a file.
 
-## Features
-
-- Generation of RSA key pairs (public and private keys).
-- Encryption of a text message using the RSA public key.
-- Decryption of the encrypted message using the RSA private key.
-- Encoding of the encrypted message in Base64 format.
-- Decoding of the Base64 encoded message back to the encrypted form.
-- Reading input from the command line, standard input, or a file.
-
-## Dependencies
-
-The program uses the following Go packages:
-- `crypto/rand` for generating random prime numbers.
-- `encoding/base64` for encoding and decoding the encrypted message.
-- `math/big` for handling large integer calculations.
-- `bufio` for reading input from files and standard input.
-- `flag` for command-line flag parsing.
-- `os` for handling file operations.
-
-## Functions
-
-### gcd(a, b, x, y *big.Int) *big.Int
-Computes the greatest common divisor of `a` and `b` using the Extended Euclidean Algorithm. It also finds `x` and `y` such that `a*x + b*y = gcd(a, b)`.
-
-### reverseModulo(a, b *big.Int) (*big.Int, error)
-Finds the modular inverse of `a` modulo `b`, if it exists.
-
-### eulerFunction(p, q *big.Int) *big.Int
-Calculates Euler's totient function for two prime numbers `p` and `q`.
-
-### rsa(base, exp, mod *big.Int) *big.Int
-Performs RSA encryption/decryption by computing `(base^exp) % mod`.
-
-### encryptToBase64(en []*big.Int) string
-Encodes a slice of `*big.Int` values into a Base64 string.
-
-### decryptFromBase64(base64Str string) ([]*big.Int, error)
-Decodes a Base64 string back into a slice of `*big.Int` values.
-
-### genKeys(bitLen int) (*big.Int, *big.Int, *big.Int)
-Generates an RSA key pair (private key, modulus, public key) with the specified bit length.
-
-### encryptingRSA(e, n *big.Int, text string) string
-Encrypts a given text message using the RSA public key (`e`, `n`) and returns the Base64 encoded encrypted message.
-
-### decryptingRSA(d, n *big.Int, en string) string
-Decrypts a Base64 encoded encrypted message using the RSA private key (`d`, `n`) and returns the original text message.
-
-### readInput() (string, error)
-Reads input from standard input.
-
-### readFile(filename string) (string, error)
-Reads input from a specified file.
-
-## Usage
-
-1. Clone the repository:
-```sh
-git clone https://github.com/s26435/RSA
-```
-
-2. Build the program:
-```sh
-go build -o rsa_program main.go
-```
-
-4. Run the program with desired flags:
-```sh
-./rsa_program -len <bit_length> -input <input_type> -m <message> -file <file_path>
-```
+## Program Overview
 
 ### Flags
 
-- `-len` (int): Length of prime numbers used to generate keys. Default is 256.
-- `-input` (int): Input source, where 0 indicates command-line message, 1 indicates standard input, and 2 indicates a file. Default is 0.
-- `-m` (string): Message to be encrypted if `input` is 0. Default is "Hello world".
-- `-file` (string): File path to read the message from if `input` is 2. Default is "text.txt".
+The program supports several flags to customize its behavior:
 
-### Example Commands
+- `-dec`: Boolean flag to specify if you want to decrypt a message. If not set, the program will encrypt a message.
+- `-len`: Integer flag to specify the length of the prime numbers used to generate keys. Default is 256.
+- `-input`: Integer flag to specify the input source:
+   - `0`: Message input from a string.
+   - `1`: Message input from standard input.
+   - `2`: Message input from a file.
+- `-m`: String flag to specify the message input if `-input` is set to `0`. Default is "Hello world".
+- `-file`: String flag to specify the file path when `-input` is set to `2`. Default is "text.txt".
+- `-out`: String flag to specify the output file path. If not set, the results will be printed to the console.
 
-1. Using a command-line message:
+### Functions
+
+- **gcd(a, b, x, y)**: Computes the greatest common divisor of `a` and `b` and also finds `x` and `y` such that `a*x + b*y = gcd(a, b)`.
+- **reverseModulo(a, b)**: Computes the modular multiplicative inverse of `a` modulo `b`.
+- **eulerFunction(p, q)**: Computes Euler's totient function for the product of two primes `p` and `q`.
+- **rsa(base, exp, mod)**: Performs modular exponentiation.
+- **encryptToBase64(en)**: Encodes the encrypted big integers to a Base64 string.
+- **genKeys(bitLen)**: Generates RSA keys of specified bit length.
+- **decryptFromBase64(base64Str)**: Decodes a Base64 string to big integers.
+- **encryptingRSA(e, n, text)**: Encrypts the text using RSA encryption.
+- **decryptingRSA(d, n, en)**: Decrypts the encrypted text using RSA decryption.
+- **readInput()**: Reads input from standard input.
+- **readFile(filename)**: Reads input from a file.
+- **writeToFile(path, text)**: Writes text to a file.
+
+### Main Functions
+
+- **encrypt()**: Handles the encryption process, including reading the input, generating keys, encrypting the message, and outputting the results.
+- **decrypt()**: Handles the decryption process, including reading the input, parsing keys and the encrypted message, decrypting the message, and outputting the results.
+
+### How to Use
+1. **Clone the repository:**
    ```sh
-   ./rsa_program -len 512 -input 0 -m "Yes? It's fantastic"
+   git clone https://github.com/s26435/RSA.git
+   ```
+2. **Build the program:**
+   ```sh
+   go build -o rsa_program main.go
+   ```
+3. **Encrypt a Message from a String**
+
+   ```sh
+   go run main.go -len 512 -input 0 -m "Your message here"
    ```
 
-2. Using standard input:
+4. **Encrypt a Message from Standard Input**
+
    ```sh
-   echo "Yes? It's fantastic" | ./rsa_program -len 512 -input 1
+   echo "Your message here" | go run main.go -len 512 -input 1
    ```
 
-3. Using a file:
+5. **Encrypt a Message from a File**
+
    ```sh
-   ./rsa_program -len 512 -input 2 -file "path/to/your/text.txt"
+   go run main.go -len 512 -input 2 -file message.txt
    ```
 
-## Example Output
+6. **Decrypt a Message from a File**
 
+   ```sh
+   go run main.go -dec -input 2 -file encrypted.txt
+   ```
+
+### Example
+
+To encrypt a message and save the result to a file:
+
+```sh
+go run main.go -len 512 -input 0 -m "Hello, RSA!" -out encrypted.txt
 ```
-decrypt key: 10123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
-encrypt key: 65537
-modulo: 12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
-Encrypted message: UGVpT21HZXZKa0ttT09jQW9kTXlFb1J2d2dnU3cwUlpFY1dxdGVNR2dFTGZ5UG9BYz0=
-Decrypted message: Yes? It's fantastic
+
+To decrypt the previously saved encrypted message:
+
+```sh
+go run main.go -dec -input 2 -file encrypted.txt
 ```
+
+### Notes
+
+- Ensure that the file paths provided with the `-file` and `-out` flags are correct and accessible.
+- The program generates new RSA keys each time it runs in encryption mode. Save your keys if you need to use them again for decryption.
