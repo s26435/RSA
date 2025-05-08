@@ -12,6 +12,8 @@ import (
 	"os"
 )
 
+// djskajdlasjdalksdjalskdjalskj
+
 var (
 	cryptPtr   = flag.Bool("dec", false, "if you want to decrypt message")
 	bitLenPtr  = flag.Int("len", 256, "Length of prime number used to generate keys")
